@@ -12,17 +12,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Picker} from '@react-native-picker/picker';
 
 const App = () => {
-  // State variables to hold transaction type, category, amount, transactions list, and calculated totals
-  const [transactionType, setTransactionType] = useState('Income'); // Default type is 'Income'
-  const [category, setCategory] = useState(''); // Category for the transaction
-  const [amount, setAmount] = useState(''); // Amount for the transaction
-  const [transactions, setTransactions] = useState([]); // Array to store all transactions
-  const [totalIncome, setTotalIncome] = useState(0); // Total income calculation
-  const [totalExpense, setTotalExpense] = useState(0); // Total expense calculation
-  const [totalBalance, setTotalBalance] = useState(0); // Total balance calculation
-  console.log('transactions', transactions);
+  const [transactionType, setTransactionType] = useState('Income');
+  const [category, setCategory] = useState('');
+  const [amount, setAmount] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [totalBalance, setTotalBalance] = useState(0);
 
-  // Categories for income and expenses
+  // Categories for income and expense
   const incomeCategories = [
     'Salary',
     'Freelance',
@@ -31,95 +27,72 @@ const App = () => {
   ];
   const expenseCategories = ['Groceries', 'Rent', 'Utilities', 'Transport'];
 
-  // useEffect hook to load transactions from AsyncStorage when the app starts
+  // Load saved transactions from AsyncStorage on initial render
   useEffect(() => {
     const loadTransactions = async () => {
-      // Fetch stored transactions from AsyncStorage
       const savedTransactions = await AsyncStorage.getItem('transactions');
-      console.log('savedTransactions', savedTransactions);
       if (savedTransactions) {
-        const parsed = JSON.parse(savedTransactions); // Parse the JSON string into an object
-        setTransactions(parsed); // Update the state with the loaded transactions
-        calculateTotals(parsed); // Recalculate the total income and expenses based on loaded transactions
+        const parsed = JSON.parse(savedTransactions);
+        setTransactions(parsed);
+        calculateBalance(parsed);
       }
     };
-    loadTransactions(); // Call the function to load transactions on component mount
-  }, []); // Empty dependency array means this runs only once on component mount
+    loadTransactions();
+  }, []);
 
-  // Function to save the updated transactions to AsyncStorage
+  // Save updated transactions to AsyncStorage
   const saveTransactions = async updatedTransactions => {
-    // Store the updated transactions as a JSON string in AsyncStorage
     await AsyncStorage.setItem(
       'transactions',
       JSON.stringify(updatedTransactions),
     );
   };
 
-  // Function to add a new transaction
+  // Add new transaction and update the balance
   const addTransaction = () => {
-    // Validate that both amount and category are filled before adding the transaction
     if (!amount || !category) {
-      Alert.alert('Error', 'Please fill all fields'); // Show error if any field is missing
+      Alert.alert('Error', 'Please fill all fields');
       return;
     }
 
-    // Create a new transaction object
     const newTransaction = {
-      id: Date.now().toString(), // Use the current timestamp as a unique ID
-      type: transactionType, // Type of the transaction (Income or Expense)
-      category, // Selected category
-      amount: parseFloat(amount), // Convert the entered amount into a float number
+      id: Date.now().toString(),
+      type: transactionType,
+      category,
+      amount: parseFloat(amount),
     };
-    console.log('newTransaction', newTransaction);
-    // Create a new array with the updated transactions
+
     const updatedTransactions = [...transactions, newTransaction];
-    console.log('updatedTransactions', updatedTransactions);
-
-    // Update the state with the new transactions array
     setTransactions(updatedTransactions);
-
-    // Recalculate the total income and expenses based on the updated transactions
-    calculateTotals(updatedTransactions);
-
-    // Save the updated transactions to AsyncStorage
+    calculateBalance(updatedTransactions);
     saveTransactions(updatedTransactions);
-
-    // Reset the form inputs
-    setAmount(''); // Reset amount input
-    setCategory(''); // Reset category input
+    setAmount('');
+    setCategory('');
   };
 
-  // Update total balance whenever totalIncome or totalExpense changes
-  useEffect(() => {
-    const balance = totalIncome - totalExpense;
-    setTotalBalance(balance); // Update the total balance state
-  }, [totalIncome, totalExpense]); // Recalculate when totalIncome or totalExpense changes
+  // Calculate the total balance from the transactions
+  const calculateBalance = transactions => {
+    let income = 0;
+    let expense = 0;
 
-  // Function to calculate the total income and total expenses from the transactions array
-  const calculateTotals = transactions => {
-    // Initialize income and expense totals to 0
-    var income = 0;
-    var expense = 0;
-
-    // Loop through each transaction and accumulate income or expense
     transactions.forEach(transaction => {
       if (transaction.type === 'Income') {
-        income += transaction.amount; // Add to income if type is 'Income'
+        income += transaction.amount;
       } else if (transaction.type === 'Expense') {
-        expense += transaction.amount; // Add to expense if type is 'Expense'
+        expense += transaction.amount;
       }
     });
 
-    // Update the state with the calculated totals
-    setTotalIncome(income);
-    setTotalExpense(expense);
+    setTotalBalance(income - expense);
   };
 
-  // Function to render a single transaction item in the list
+  // Render each transaction item in the list
   const renderTransaction = ({item}) => (
     <View style={styles.transactionItem}>
-      {/* Display transaction details */}
-      <Text style={styles.transactionText}>{item.type}</Text>
+      <Text
+        style={[styles.transactionText, {color: item.type === 'Income' ? 'green' : 'red'}]}>
+        {item.type}
+      </Text>
       <Text style={styles.transactionText}>{item.category}</Text>
       <Text style={styles.transactionText}>${item.amount.toFixed(2)}</Text>
     </View>
@@ -127,68 +100,88 @@ const App = () => {
 
   return (
     <View style={styles.container}>
-      {/* Financial Summary Section */}
+      {/* Summary section showing the transaction type and total balance */}
       <View style={styles.summary}>
-        {/* Display total balance, income, and expenses */}
-        <Text style={styles.summaryText}>
-          Total Balance: ${totalBalance.toFixed(2)}
+        <Text style={{fontSize: 30, fontWeight: 'bold', color: 'black'}}>
+          Add {transactionType}
         </Text>
-        <Text style={[styles.summaryText, {color: 'green'}]}>
-          Total Income: ${totalIncome.toFixed(2)}
-        </Text>
-        <Text style={[styles.summaryText, {color: 'red'}]}>
-          Total Expenses: ${totalExpense.toFixed(2)}
+        <Text style={styles.summaryText}>Total Balance</Text>
+        <Text style={{fontSize: 30, fontWeight: 'bold', color: 'black'}}>
+          $ {totalBalance.toFixed(2)}
         </Text>
       </View>
 
-      {/* Transaction Input Section */}
+      {/* Input section for entering transaction details */}
       <View style={styles.inputArea}>
-        {/* Picker for transaction type (Income or Expense) */}
-        <Picker
-          selectedValue={transactionType}
-          onValueChange={value => setTransactionType(value)} // Update state when the transaction type changes
-          style={styles.picker}>
-          <Picker.Item label="Select Transaction Type" value="" />
-          <Picker.Item label="Income" value="Income" />
-          <Picker.Item label="Expense" value="Expense" />
-        </Picker>
+        {/* Label for transaction type */}
+        <Text
+          style={[styles.label, {color: transactionType === 'Income' ? 'green' : 'red'}]}>
+          Transaction Type
+        </Text>
 
-        {/* Picker for selecting category based on transaction type */}
-        <Picker
-          selectedValue={category}
-          onValueChange={value => setCategory(value)} // Update state when the category changes
-          style={styles.picker}>
-          <Picker.Item label="Select Category" value="" />
-          {/* Dynamically render categories based on transaction type */}
-          {(transactionType === 'Income'
-            ? incomeCategories
-            : expenseCategories
-          ).map((cat, index) => (
-            <Picker.Item key={index} label={cat} value={cat} />
-          ))}
-        </Picker>
+        {/* Picker for selecting transaction type (Income/Expense) */}
+        <View
+          style={[styles.pickerContainer, {borderColor: transactionType === 'Income' ? 'green' : 'red'}]}>
+          <Picker
+            selectedValue={transactionType}
+            onValueChange={value => setTransactionType(value)}
+            style={styles.picker}>
+            <Picker.Item
+              label="Income"
+              value="Income"
+              style={{color: transactionType === 'Income' ? 'green' : 'black'}}
+            />
+            <Picker.Item
+              label="Expense"
+              value="Expense"
+              style={{color: transactionType === 'Expense' ? 'red' : 'black'}}
+            />
+          </Picker>
+        </View>
 
-        {/* Input field for entering the transaction amount */}
+        {/* Category selection based on transaction type */}
+        <Text style={styles.label}>
+          {transactionType === 'Income' ? 'Income Category' : 'Expense Category'}
+        </Text>
+        <View style={[styles.pickerContainer, {borderColor: 'black'}]}>
+          <Picker
+            selectedValue={category}
+            onValueChange={value => setCategory(value)}
+            style={styles.picker}>
+            <Picker.Item
+              label={transactionType === 'Income' ? 'Select Income Category' : 'Select Expense Category'}
+              value=""
+            />
+            {(transactionType === 'Income' ? incomeCategories : expenseCategories).map((cat, index) => (
+              <Picker.Item key={index} label={cat} value={cat} />
+            ))}
+          </Picker>
+        </View>
+
+        {/* Input for amount */}
+        <Text style={{fontSize: 16, fontWeight: 'bold', marginBottom: 5}}>Amount</Text>
         <TextInput
           style={styles.input}
           placeholder="Enter Amount"
-          keyboardType="numeric" // Only allow numeric input
+          keyboardType="numeric"
           value={amount}
-          onChangeText={setAmount} // Update state with the entered amount
+          onChangeText={setAmount}
         />
 
         {/* Button to add the transaction */}
-        <TouchableOpacity style={styles.addButton} onPress={addTransaction}>
+        <TouchableOpacity
+          style={[styles.addButton, transactionType === 'Income' ? styles.incomeButton : styles.expenseButton]}
+          onPress={addTransaction}>
           <Text style={styles.addButtonText}>Add {transactionType}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Transaction List Section */}
+      {/* List of transactions */}
       <FlatList
-        data={transactions} // List of transactions to render
-        renderItem={renderTransaction} // Function to render each item
-        keyExtractor={item => item.id} // Ensure each item has a unique key
-        contentContainerStyle={styles.transactionList} // Style for the transaction list container
+        data={transactions}
+        renderItem={renderTransaction}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.transactionList}
       />
     </View>
   );
@@ -196,22 +189,30 @@ const App = () => {
 
 const styles = StyleSheet.create({
   container: {flex: 1, padding: 20, backgroundColor: '#fff'},
-  summary: {marginBottom: 20},
+  summary: {marginBottom: 20, gap: 10},
   summaryText: {fontSize: 18, fontWeight: 'bold'},
   inputArea: {marginBottom: 20},
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: 'black',
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
   },
+  picker: {borderWidth: 1, borderRadius: 5},
+  pickerContainer: {
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
   addButton: {
-    backgroundColor: '#007BFF',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
   },
+  incomeButton: {backgroundColor: 'green'},
+  expenseButton: {backgroundColor: 'red'},
   addButtonText: {color: '#fff', fontWeight: 'bold'},
   transactionList: {paddingVertical: 10},
   transactionItem: {
@@ -222,6 +223,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
   },
   transactionText: {fontSize: 16},
+  label: {fontSize: 16, fontWeight: 'bold', marginBottom: 5},
 });
 
 export default App;
