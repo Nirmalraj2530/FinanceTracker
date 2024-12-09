@@ -32,9 +32,9 @@ const App = () => {
     const loadTransactions = async () => {
       const savedTransactions = await AsyncStorage.getItem('transactions');
       if (savedTransactions) {
-        const parsed = JSON.parse(savedTransactions);
-        setTransactions(parsed);
-        calculateBalance(parsed);
+        const storedTransactions  = JSON.parse(savedTransactions);
+        setTransactions(storedTransactions );
+        calculateBalance(storedTransactions );
       }
     };
     loadTransactions();
@@ -90,7 +90,10 @@ const App = () => {
   const renderTransaction = ({item}) => (
     <View style={styles.transactionItem}>
       <Text
-        style={[styles.transactionText, {color: item.type === 'Income' ? 'green' : 'red'}]}>
+        style={[
+          styles.transactionText,
+          {color: item.type === 'Income' ? 'green' : 'red'},
+        ]}>
         {item.type}
       </Text>
       <Text style={styles.transactionText}>{item.category}</Text>
@@ -115,13 +118,19 @@ const App = () => {
       <View style={styles.inputArea}>
         {/* Label for transaction type */}
         <Text
-          style={[styles.label, {color: transactionType === 'Income' ? 'green' : 'red'}]}>
+          style={[
+            styles.label,
+            {color: transactionType === 'Income' ? 'green' : 'red'},
+          ]}>
           Transaction Type
         </Text>
 
         {/* Picker for selecting transaction type (Income/Expense) */}
         <View
-          style={[styles.pickerContainer, {borderColor: transactionType === 'Income' ? 'green' : 'red'}]}>
+          style={[
+            styles.pickerContainer,
+            {borderColor: transactionType === 'Income' ? 'green' : 'red'},
+          ]}>
           <Picker
             selectedValue={transactionType}
             onValueChange={value => setTransactionType(value)}
@@ -141,7 +150,9 @@ const App = () => {
 
         {/* Category selection based on transaction type */}
         <Text style={styles.label}>
-          {transactionType === 'Income' ? 'Income Category' : 'Expense Category'}
+          {transactionType === 'Income'
+            ? 'Income Category'
+            : 'Expense Category'}
         </Text>
         <View style={[styles.pickerContainer, {borderColor: 'black'}]}>
           <Picker
@@ -149,17 +160,26 @@ const App = () => {
             onValueChange={value => setCategory(value)}
             style={styles.picker}>
             <Picker.Item
-              label={transactionType === 'Income' ? 'Select Income Category' : 'Select Expense Category'}
+              label={
+                transactionType === 'Income'
+                  ? 'Select Income Category'
+                  : 'Select Expense Category'
+              }
               value=""
             />
-            {(transactionType === 'Income' ? incomeCategories : expenseCategories).map((cat, index) => (
+            {(transactionType === 'Income'
+              ? incomeCategories
+              : expenseCategories
+            ).map((cat, index) => (
               <Picker.Item key={index} label={cat} value={cat} />
             ))}
           </Picker>
         </View>
 
         {/* Input for amount */}
-        <Text style={{fontSize: 16, fontWeight: 'bold', marginBottom: 5}}>Amount</Text>
+        <Text style={{fontSize: 16, fontWeight: 'bold', marginBottom: 5}}>
+          Amount
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="Enter Amount"
@@ -170,13 +190,21 @@ const App = () => {
 
         {/* Button to add the transaction */}
         <TouchableOpacity
-          style={[styles.addButton, transactionType === 'Income' ? styles.incomeButton : styles.expenseButton]}
+          style={[
+            styles.addButton,
+            transactionType === 'Income'
+              ? styles.incomeButton
+              : styles.expenseButton,
+          ]}
           onPress={addTransaction}>
           <Text style={styles.addButtonText}>Add {transactionType}</Text>
         </TouchableOpacity>
       </View>
 
       {/* List of transactions */}
+      <Text style={{fontSize: 16, fontWeight: 'bold', marginBottom: 5}}>
+        Transaction History
+      </Text>
       <FlatList
         data={transactions}
         renderItem={renderTransaction}
